@@ -1,5 +1,16 @@
 # PatchCenter
 
+## Windows 一键启动与关闭
+
+在项目根目录双击 `start.bat`，会自动准备 Python 虚拟环境和缺失或配置变更后的依赖，依次启动后端（127.0.0.1:8000）和前端（0.0.0.0:5173），检查前后端连通后打开浏览器。首次需要安装 Python 3.10+、Node.js 22.12+，并能访问依赖仓库。请先关闭之前手动启动的服务。
+
+- 双击 `stop.bat`，或在启动窗口按 Ctrl+C，关闭该次启动的前后端。
+- 关闭启动窗口时，Windows Job Object 会清理本次启动的子进程；不会按进程名关闭其他 Python 或 Node 程序。
+- 端口被占用会提示错误，不会自动结束占用进程。
+- 默认局域网测试模式；只需要本机访问时，在 PowerShell 执行 `.\start.bat --local`。
+- 已上传的文件不会被关闭脚本删除。运行状态保存在被 Git 忽略的 `.runtime/` 目录。
+- 仍可按下文手动启动。开发模式仅使用非敏感测试文件，不能对公网开放。
+
 ## 第一步：初始化 React 网页
 
 当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。后端提供健康检查和 Patch 提交接口，通过 Vite 代理接收文件及 Commit Message，尚未接入 Git 或 AI。原 v0.1 保留在 `backup-v0.1` 分支。
