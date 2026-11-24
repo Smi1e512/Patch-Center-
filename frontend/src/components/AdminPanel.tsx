@@ -31,7 +31,76 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
     if (!stored) {
       setToken(null);
       setPhase('login');
-      if (phase === 'ready' && token) {
+      return () => controller.abort();
+    }
+    setPhase('checking');
+    verifyAdmin(stored, controller.signal).then(() => {
+      if (controller.signal.aborted) return;
+      setToken(stored);
+      setPhase('ready');
+    }).catch((err: unknown) => {
+      if (controller.signal.aborted) return;
+      if (err instanceof AdminApiError && err.status === 401) {
+        saveToken(null);
+        setToken(null);
+        setPhase('login');
+      } else {
+        setError(err instanceof Error ? err.message : '无法验证登录状态。');
+        setPhase('unavailable');
+      }
+    });
+    return () => controller.abort();
+  }, [retry]);
+
+  async function login(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!password || pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const credential = await loginAdmin(password);
+      if (!saveToken(credential)) setNotice('浏览器禁止本地存储，本次登录无法长期保存。');
+      setToken(credential);
+      setPhase('ready');
+      setPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败。');
+      setPassword('');
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function logout() {
+    if (!token || pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      await logoutAdmin(token);
+      saveToken(null);
+      setToken(null);
+      setNotice('');
+      setPhase('login');
+    } catch (err) {
+      if (err instanceof AdminApiError && err.status === 401) {
+        saveToken(null);
+        setToken(null);
+        setNotice('');
+        setPhase('login');
+      } else {
+        setError('未能撤销登录凭证，请确认后端服务正常后重试。');
+      }
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  if (phase === 'ready' && token) {
     return (
       <section className="admin-panel">
         <div className="page-intro admin-intro">
