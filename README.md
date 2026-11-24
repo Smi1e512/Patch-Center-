@@ -2,7 +2,7 @@
 
 ## 第一步：初始化 React 网页
 
-当前包含 React + TypeScript + Vite 首页和 Patch 文件选择组件。没有后端、Git 或 AI 功能。原 v0.1 保留在 `backup-v0.1` 分支。
+当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。没有后端、Git 或 AI 功能。原 v0.1 保留在 `backup-v0.1` 分支。
 
 需要 Node.js 22（建议 22.12+）和 npm。
 
@@ -48,6 +48,14 @@ Test-NetConnection 192.168.1.100 -Port 5173
 
 验收（请使用非敏感测试文件）：点击选择、拖拽选择、移除后重新选择同一个文件；测试 .txt 文件、空文件、超过 10 MB 的文件和同时拖入多个文件；确认错误提示及已有选择保留。仍可使用 `npm run dev:lan` 让同事验证页面。
 
+## 第四步：Commit Message 输入框
+
+在 Patch 文件选择区域下方填写 Commit Message。支持多行输入、实时长度统计（按 JavaScript UTF-16 代码单元计数）和最多 4000 个代码单元的限制。输入框失去焦点时校验必填，空字符串和纯空白字符均无效；输入有效内容后错误提示消失。
+
+组件位于 `frontend/src/components/CommitMessageInput.tsx`，由 `App.tsx` 通过 useState 保存原始字符串（包括换行）。切换 Patch 文件不会清空 Commit Message。刷新页面后两项均清空。
+
+验收：填写普通提交信息、多行文本、清空后移开焦点、输入纯空白、粘贴超长文本并查看长度限制。此阶段没有提交按钮、后端请求或 Git 操作。
+
 ## 下一步
 
-增加 Commit Message 输入框，暂不接入后端。
+初始化 Python + FastAPI 后端，实现独立的健康检查接口。

@@ -130,3 +130,67 @@ h1 {
 .upload-note {
   margin: 12px 0 0;
 }
+
+.commit-message {
+  margin-top: 28px;
+}
+
+.commit-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.required-mark {
+  color: #b42318;
+}
+
+.commit-input {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #aab5c6;
+  border-radius: 8px;
+}
+
+.commit-input::placeholder {
+  color: #7c8798;
+}
+
+.commit-input:focus {
+  border-color: #3159c8;
+  outline: 2px solid #3159c8;
+  outline-offset: 2px;
+}
+
+.commit-input.is-invalid {
+  border-color: #b42318;
+}
+
+.commit-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.commit-meta span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.commit-error {
+  color: #b42318;
+  font-size: 14px;
+  margin: 10px 0 0;
+}
