@@ -2,7 +2,7 @@ export type PatchReceipt = {
   id: string;
   filename: string;
   size: number;
-  status: 'received';
+  status: 'pending_review';
 };
 
 export async function submitPatch(file: File, commitMessage: string): Promise<PatchReceipt> {
@@ -26,7 +26,7 @@ export async function submitPatch(file: File, commitMessage: string): Promise<Pa
       ? result.detail
       : `提交失败（HTTP ${response.status}），请检查后端服务。`);
   }
-  if (response.status !== 201 || result?.status !== 'received' ||
+  if (response.status !== 201 || result?.status !== 'pending_review' ||
       typeof result.id !== 'string' || typeof result.filename !== 'string' ||
       typeof result.size !== 'number') {
     throw new Error('后端返回了无效的提交结果。');

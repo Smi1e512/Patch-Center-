@@ -102,7 +102,7 @@ backend/uploads/<id>/
   request.json
 ```
 
-成功返回 HTTP 201、id、filename、size 和 status=received；页面显示接收结果并清空表单。失败保留输入并显示错误。上传目录已加入 .gitignore；管理后台提供任务元数据只读查询，不提供 Patch 内容下载或执行接口。文件扩展名校验不代表 Patch 内容正确。
+成功返回 HTTP 201、id、filename、size 和 status=pending_review；页面显示接收结果并清空表单。失败保留输入并显示错误。上传目录已加入 .gitignore；管理后台提供任务查询与人工审核，不提供 Patch 内容下载或执行接口。文件扩展名校验不代表 Patch 内容正确。
 
 验收：分别在本机与经授权的同事电脑提交非敏感测试文件，检查本机 uploads 目录和 JSON 中的多行提交信息。停止后端后测试错误提示，再重启。无需修改防火墙的 39472 端口。
 
@@ -134,12 +134,22 @@ python start.py
 
 ## 管理后台：任务管理
 
-登录后台后自动加载任务列表，默认最新提交优先，每页 20 条。点击任务展开完整 Commit Message、任务 ID、时间、文件大小及状态，点击“刷新列表”获取最新任务。现阶段只读，所有任务状态为“已接收”，不下载、删除、审批或执行 Patch。
+登录后台后自动加载任务列表，默认最新提交优先，每页 20 条。点击任务展开完整 Commit Message、任务 ID、时间、文件大小及状态，点击“刷新列表”获取最新任务。上传后状态为“待审核”。管理员展开任务后可点击“审核通过”或“驳回”，确认后保存审核结果。现阶段不下载、删除或执行 Patch。
 
-后端 GET /api/admin/tasks?offset=0&limit=20 必须携带管理员 Bearer Token，返回分页任务元数据；响应禁止缓存。数据直接读取 backend/uploads/<id>/request.json，并确认对应 change.patch 存在且大小匹配，无需数据库。新提交增加 UTC createdAt，历史记录使用 request.json 文件修改时间，并在详情标明。未完成上传不显示，损坏记录跳过并提示数量；不修改原始记录。
+后端 GET /api/admin/tasks?offset=0&limit=20 必须携带管理员 Bearer Token，返回分页任务元数据；响应禁止缓存。数据直接读取 backend/uploads/<id>/request.json，并确认对应 change.patch 存在且大小匹配，无需数据库。新提交增加 UTC createdAt，历史记录使用 request.json 文件修改时间，并在详情标明。未完成上传不显示，损坏记录跳过并提示数量；查询不修改原始记录。
 
 验收：提交两份非敏感测试 Patch，进入后台查看最新任务在前，展开核对多行 Commit Message，提交第三份后刷新，检查旧任务仍可查看。未认证访问任务接口应返回 401。测试分页、空目录及异常记录，可运行现有 unittest 命令。
 
+## 人工审核关卡
+
+普通访客只上传 Patch 和 Commit Message，不提供审核状态，服务端固定设置 pending_review。历史 received 任务也视为待审核。
+
+管理员通过 POST /api/admin/tasks/{id}/review（JSON decision 为 approved 或 rejected）审核，必须持有有效 Token。仅允许 pending_review 转为 approved 或 rejected，重复审核返回 409。审核状态及 UTC reviewedAt 原子写入原 request.json，单进程内加锁，保留原始提交时间及 Patch 文件，不依赖数据库。重启后审核结果保留。
+
+审核通过仅表示允许进入后续处理，并不表示执行成功，也不自动启动任何 AI 或 Git 操作。将来执行入口必须在服务端重新检查状态为 approved，未审核和驳回任务不得进入执行流程。当前尚无执行入口。
+
+验收：上传后看到待审核，管理员审核一条通过、一条驳回，刷新和重启后状态不变，无法重复审核，无 Token 的审核请求返回 401，上传时无论如何都不会触发执行。
+
 ## 下一步
 
-按需增加后台任务操作；AI 通信暂缓。
+按需完善审核后的处理能力；AI 通信暂缓。

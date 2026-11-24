@@ -60,7 +60,8 @@ export type AdminTask = {
   filename: string;
   size: number;
   commitMessage: string;
-  status: 'received';
+  status: 'pending_review' | 'approved' | 'rejected';
+  reviewedAt: string | null;
   createdAt: string;
   timeSource: 'recorded' | 'metadata_mtime';
 };
@@ -81,4 +82,16 @@ export async function listAdminTasks(token: string, offset: number, signal?: Abo
     throw new Error('后台返回了无效的任务列表。');
   }
   return data as TaskPage;
+}
+
+export async function reviewAdminTask(token: string, id: string, decision: 'approved' | 'rejected'): Promise<AdminTask> {
+  const data = await request(`tasks/${encodeURIComponent(id)}/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision }),
+  }, token);
+  if (data?.id !== id || data.status !== decision) {
+    throw new Error('后台返回了无效的审核结果，请刷新列表确认。');
+  }
+  return data as AdminTask;
 }

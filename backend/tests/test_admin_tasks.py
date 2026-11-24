@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Response
 
 import admin_tasks as tasks
 from admin_auth import require_admin
@@ -50,6 +50,32 @@ class AdminTaskTests(unittest.TestCase):
         self.assertEqual(second["commitMessage"], "feat: test\n\nsecond line")
         legacy = self.write_task("c" * 32)
         self.assertEqual(tasks.read_task(legacy)["timeSource"], "metadata_mtime")
+
+    def test_review_requires_admin_and_is_persistent(self):
+        folder = self.write_task("a" * 32)
+        before = tasks.read_task(folder)
+        self.assertEqual(before["status"], "pending_review")
+        app = FastAPI()
+        app.include_router(tasks.router)
+        route = next(route for route in app.routes if route.path == "/api/admin/tasks/{task_id}/review")
+        self.assertTrue(any(item.call is require_admin for item in route.dependant.dependencies))
+        result = tasks.review_task(folder.name, tasks.ReviewRequest(decision="approved"), Response())
+        self.assertEqual(result["status"], "approved")
+        self.assertIsNotNone(result["reviewedAt"])
+        self.assertEqual(tasks.read_task(folder)["createdAt"], before["createdAt"])
+        self.assertEqual(tasks.read_task(folder)["status"], "approved")
+        self.assertEqual((folder / "change.patch").read_bytes(), b"patch")
+        with self.assertRaises(HTTPException) as error:
+            tasks.review_task(folder.name, tasks.ReviewRequest(decision="rejected"), Response())
+        self.assertEqual(error.exception.status_code, 409)
+
+    def test_reject_and_missing_task(self):
+        folder = self.write_task("b" * 32)
+        result = tasks.review_task(folder.name, tasks.ReviewRequest(decision="rejected"), Response())
+        self.assertEqual(result["status"], "rejected")
+        with self.assertRaises(HTTPException) as error:
+            tasks.review_task("c" * 32, tasks.ReviewRequest(decision="approved"), Response())
+        self.assertEqual(error.exception.status_code, 404)
 
     def test_corrupt_and_incomplete_records(self):
         folder = self.write_task("a" * 32)

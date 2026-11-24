@@ -397,3 +397,13 @@ h1 {
   font-size: 13px;
   color: #667085;
 }
+
+.task-state.pending_review { color: #946200; }
+.task-state.approved { color: #24643b; }
+.task-state.rejected { color: #b42318; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.approve-button, .reject-button { padding: 9px 16px; border-radius: 8px; font: inherit; cursor: pointer; }
+.approve-button { background: #24643b; color: #fff; border: 1px solid #24643b; }
+.reject-button { background: #fff; color: #b42318; border: 1px solid #d9a29e; }
+.approve-button:disabled, .reject-button:disabled { opacity: .55; cursor: not-allowed; }
+.approve-button:focus-visible, .reject-button:focus-visible { outline: 2px solid #3159c8; outline-offset: 2px; }

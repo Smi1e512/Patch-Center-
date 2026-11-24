@@ -62,10 +62,10 @@ export default function App() {
       {error && <p className="submission-error" role="alert">{error}</p>}
       {receipt && (
         <section className="submission-result" role="status">
-          <strong>提交成功，后端已接收文件。</strong>
+          <strong>上传成功，等待管理员审核。</strong>
           <span>文件：{receipt.filename}</span>
           <span>任务 ID：{receipt.id}</span>
-          <span>暂未执行 Git 或 AI 操作。</span>
+          <span>审核通过后才能进入后续处理流程。</span>
         </section>
       )}
       </>}

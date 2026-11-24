@@ -76,7 +76,7 @@ def submit_patch(
             "filename": filename,
             "size": size,
             "commitMessage": commit_message,
-            "status": "received",
+            "status": "pending_review",
             "createdAt": datetime.now(timezone.utc).isoformat(),
         }
         (folder / "request.tmp").write_text(
@@ -88,4 +88,4 @@ def submit_patch(
         shutil.rmtree(folder, ignore_errors=True)
         raise
 
-    return {"id": upload_id, "filename": filename, "size": size, "status": "received"}
+    return {"id": upload_id, "filename": filename, "size": size, "status": "pending_review"}

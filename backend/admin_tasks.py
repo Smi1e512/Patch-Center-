@@ -1,16 +1,24 @@
-"""Read-only administrative access to locally received tasks."""
+"""Administrative task listing and review; never executes a patch."""
 import json
 import re
+import threading
+from typing import Literal
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from admin_auth import require_admin
+from pydantic import BaseModel
 
 UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 TASK_ID = re.compile(r"[0-9a-f]{32}")
 MAX_FILE_BYTES = 10 * 1024 * 1024
+REVIEW_LOCK = threading.Lock()
+
+
+class ReviewRequest(BaseModel):
+    decision: Literal['approved', 'rejected']
 
 router = APIRouter(
     prefix="/api/admin/tasks",
@@ -39,7 +47,7 @@ def read_task(folder: Path) -> dict:
     if (not isinstance(filename, str) or not filename or len(filename) > 255
             or not isinstance(message, str) or not message.strip() or len(message) > 4000
             or type(size) is not int or not 0 < size <= MAX_FILE_BYTES
-            or patch.stat().st_size != size or data.get("status") != "received"):
+            or patch.stat().st_size != size or data.get("status") not in ("received", "pending_review", "approved", "rejected")):
         raise ValueError("Invalid task fields")
     # Historical submissions did not store a timestamp; use the metadata
     # modification time as an explicitly labelled fallback.
@@ -52,13 +60,23 @@ def read_task(folder: Path) -> dict:
         if created.tzinfo is None:
             raise ValueError("Missing timestamp timezone")
         created = created.astimezone(timezone.utc)
-        source = "recorded"
+        source = data.get("timeSource", "recorded")
+        if source not in ("recorded", "metadata_mtime"):
+            raise ValueError("Invalid timestamp source")
+    status = "pending_review" if data["status"] == "received" else data["status"]
+    reviewed_at = data.get("reviewedAt")
+    if status in ("approved", "rejected"):
+        if not isinstance(reviewed_at, str) or datetime.fromisoformat(reviewed_at).tzinfo is None:
+            raise ValueError("Invalid review timestamp")
+    else:
+        reviewed_at = None
     return {
         "id": folder.name,
         "filename": filename,
         "size": size,
         "commitMessage": message,
-        "status": "received",
+        "status": status,
+        "reviewedAt": reviewed_at,
         "createdAt": created.isoformat(timespec="microseconds"),
         "timeSource": source,
     }
@@ -95,3 +113,39 @@ def list_tasks(
         "limit": limit,
         "skipped": skipped,
     }
+
+
+@router.post("/{task_id}/review")
+def review_task(task_id: str, body: ReviewRequest, response: Response):
+    """Only pending tasks can be reviewed. Does not dispatch any work."""
+    response.headers["Cache-Control"] = "no-store"
+    if not TASK_ID.fullmatch(task_id):
+        raise HTTPException(404, "任务不存在。")
+    folder = UPLOAD_DIR / task_id
+    with REVIEW_LOCK:
+        try:
+            if not (folder / "request.json").exists():
+                raise HTTPException(404, "任务不存在或尚未上传完成。")
+            task = read_task(folder)
+        except (OSError, ValueError, TypeError, KeyError, RuntimeError, OverflowError):
+            raise HTTPException(409, "任务记录异常，无法审核。")
+        if task["status"] != "pending_review":
+            raise HTTPException(409, "任务已审核，请刷新列表。")
+        task["status"] = body.decision
+        task["reviewedAt"] = datetime.now(timezone.utc).isoformat()
+        # Preserve extra metadata fields and the original submission time,
+        # including the historical modification-time fallback.
+        temporary = folder / "review.tmp"
+        try:
+            original = json.loads((folder / "request.json").read_text(encoding="utf-8"))
+            original.update(task)
+            with temporary.open("x", encoding="utf-8") as output:
+                json.dump(original, output, ensure_ascii=False, indent=2)
+                output.write("\n")
+            temporary.replace(folder / "request.json")
+        except (OSError, ValueError, TypeError):
+            raise HTTPException(503, "无法保存审核结果，请检查任务目录。")
+        finally:
+            # Only the single local server manages this temporary filename.
+            temporary.unlink(missing_ok=True)
+        return task
