@@ -2,7 +2,7 @@
 
 ## 第一步：初始化 React 网页
 
-当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。没有后端、Git 或 AI 功能。原 v0.1 保留在 `backup-v0.1` 分支。
+当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。后端仅提供健康检查接口，尚未接入前端、Git 或 AI。原 v0.1 保留在 `backup-v0.1` 分支。
 
 需要 Node.js 22（建议 22.12+）和 npm。
 
@@ -56,6 +56,27 @@ Test-NetConnection 192.168.1.100 -Port 5173
 
 验收：填写普通提交信息、多行文本、清空后移开焦点、输入纯空白、粘贴超长文本并查看长度限制。此阶段没有提交按钮、后端请求或 Git 操作。
 
+## 第五步：初始化 Python + FastAPI 后端
+
+需要 Python 3.10 或更高版本。保持前端运行，在新的 PowerShell 窗口中，从项目根目录执行：
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+打开 http://127.0.0.1:8000/api/health ，应返回 `{"status":"ok"}`（HTTP 200）。接口文档位于 http://127.0.0.1:8000/docs 。
+
+也可以在另一个 PowerShell 窗口执行：
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+后端只监听本机地址，不需要开放 8000 端口，也不影响同事访问前端的 5173 端口。本阶段不配置跨域、不接收文件、不操作 Git 或 AI。健康检查仅代表 HTTP 服务正常响应，不代表其他依赖已就绪。
+
 ## 下一步
 
-初始化 Python + FastAPI 后端，实现独立的健康检查接口。
+通过 Vite 代理联通前后端，实现提交 Patch 和 Commit Message 的 HTTP 请求；先使用非敏感测试数据。

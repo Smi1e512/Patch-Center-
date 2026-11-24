@@ -3,3 +3,9 @@ dist/
 .vite/
 *.local
 .env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
