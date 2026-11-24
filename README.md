@@ -2,7 +2,7 @@
 
 ## 第一步：初始化 React 网页
 
-当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。后端仅提供健康检查接口，尚未接入前端、Git 或 AI。原 v0.1 保留在 `backup-v0.1` 分支。
+当前包含 React + TypeScript + Vite 首页、Patch 文件选择组件和 Commit Message 输入框。后端提供健康检查和 Patch 提交接口，通过 Vite 代理接收文件及 Commit Message，尚未接入 Git 或 AI。原 v0.1 保留在 `backup-v0.1` 分支。
 
 需要 Node.js 22（建议 22.12+）和 npm。
 
@@ -44,7 +44,7 @@ Test-NetConnection 192.168.1.100 -Port 5173
 
 点击或拖拽选择一个 .patch 或 .diff 文件（不区分扩展名大小写，最大 10 MB，即 10 × 1024 × 1024 字节）。页面显示文件名、大小，支持移除和替换。无效格式、空文件、超限文件或同时拖入多个文件时显示错误，保留之前有效的选择。
 
-组件位于 `frontend/src/components/PatchUpload.tsx`，由 `App.tsx` 保存 File 对象。此阶段文件仅留在浏览器内存，不读取内容、不发送网络请求，刷新页面后清空。
+组件位于 `frontend/src/components/PatchUpload.tsx`，由 `App.tsx` 保存 File 对象。提交前文件留在浏览器内存，刷新页面后清空。
 
 验收（请使用非敏感测试文件）：点击选择、拖拽选择、移除后重新选择同一个文件；测试 .txt 文件、空文件、超过 10 MB 的文件和同时拖入多个文件；确认错误提示及已有选择保留。仍可使用 `npm run dev:lan` 让同事验证页面。
 
@@ -54,7 +54,7 @@ Test-NetConnection 192.168.1.100 -Port 5173
 
 组件位于 `frontend/src/components/CommitMessageInput.tsx`，由 `App.tsx` 通过 useState 保存原始字符串（包括换行）。切换 Patch 文件不会清空 Commit Message。刷新页面后两项均清空。
 
-验收：填写普通提交信息、多行文本、清空后移开焦点、输入纯空白、粘贴超长文本并查看长度限制。此阶段没有提交按钮、后端请求或 Git 操作。
+验收：填写普通提交信息、多行文本、清空后移开焦点、输入纯空白、粘贴超长文本并查看长度限制。提交功能见第六步。
 
 ## 第五步：初始化 Python + FastAPI 后端
 
@@ -75,8 +75,26 @@ python -m venv .venv
 Invoke-RestMethod http://127.0.0.1:8000/api/health
 ```
 
-后端只监听本机地址，不需要开放 8000 端口，也不影响同事访问前端的 5173 端口。本阶段不配置跨域、不接收文件、不操作 Git 或 AI。健康检查仅代表 HTTP 服务正常响应，不代表其他依赖已就绪。
+后端只监听本机地址，不需要开放 8000 端口，也不影响同事访问前端的 5173 端口。无需配置跨域，文件提交见第六步；尚不操作 Git 或 AI。健康检查仅代表 HTTP 服务正常响应，不代表其他依赖已就绪。
+
+## 第六步：前后端联通
+
+更新代码后，在 backend 目录重新安装依赖并启动后端（命令见第五步），再从 frontend 目录重启 `npm run dev` 或 `npm run dev:lan`。Vite 将同源 /api 请求代理到本机 127.0.0.1:8000，因此无需向同事开放后端端口。
+
+选择一个非敏感测试 Patch 并填写 Commit Message，点击“提交 Patch”。前端使用 FormData 发送 POST /api/patches，字段名为 patch 和 commit_message。后端独立校验格式、大小、非空和提交信息，使用随机 ID 保存原始字节及 UTF-8 JSON 元数据：
+
+```text
+backend/uploads/<id>/
+  change.patch
+  request.json
+```
+
+成功返回 HTTP 201、id、filename、size 和 status=received；页面显示接收结果并清空表单。失败保留输入并显示错误。上传目录已加入 .gitignore；不提供文件读取或执行接口。文件扩展名校验不代表 Patch 内容正确。
+
+验收：分别在本机与经授权的同事电脑提交非敏感测试文件，检查本机 uploads 目录和 JSON 中的多行提交信息。停止后端后测试错误提示，再重启。无需修改防火墙的 8000 端口。
+
+仅用于受控开发测试：目前没有登录、限流或传输加密。开启 LAN 模式会使可达的用户能够提交文件；不要接收真实公司代码或敏感数据，不要暴露公网。以后接入 AI 前需要独立的本地审核、权限隔离和执行入口。
 
 ## 下一步
 
-通过 Vite 代理联通前后端，实现提交 Patch 和 Commit Message 的 HTTP 请求；先使用非敏感测试数据。
+验证本地 AI CLI 的非交互调用方式，先只发送固定的测试 Prompt，不将网页上传直接连接到 AI。
