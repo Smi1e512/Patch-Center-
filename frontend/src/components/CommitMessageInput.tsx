@@ -15,7 +15,7 @@ export default function CommitMessageInput({ value, onChange }: Props) {
   return (
     <section className="commit-message">
       <label className="commit-label" htmlFor={id}>
-        Commit Message <span className="required-mark" aria-hidden="true">*</span>
+        <span className="field-index">02</span> Commit Message <span className="required-mark" aria-hidden="true">*</span>
       </label>
       <textarea
         id={id}

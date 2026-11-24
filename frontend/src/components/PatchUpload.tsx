@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
+import Icon from './Icon';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -69,7 +70,7 @@ export default function PatchUpload({ file, onChange, disabled = false }: Props)
 
   return (
     <section className="patch-upload" aria-labelledby={titleId}>
-      <h2 id={titleId}>Patch 文件</h2>
+      <h2 id={titleId}><span className="field-index">01</span> Patch 文件 <span className="required-mark" aria-hidden="true">*</span></h2>
       <input
         ref={inputRef}
         type="file"
@@ -98,14 +99,11 @@ export default function PatchUpload({ file, onChange, disabled = false }: Props)
         <button
           className="upload-trigger"
           type="button"
+          disabled={disabled}
           onClick={() => inputRef.current?.click()}
           aria-describedby={error ? `${hintId} ${errorId}` : hintId}
         >
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-            strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" />
-          </svg>
+          <span className="upload-icon"><Icon name="upload" size={28}/></span>
           <strong>{file ? '点击或拖拽替换文件' : '点击或拖拽选择文件'}</strong>
           <span id={hintId}>支持 .patch / .diff，单个文件最大 10 MB</span>
         </button>
@@ -115,6 +113,7 @@ export default function PatchUpload({ file, onChange, disabled = false }: Props)
 
       {file && (
         <div className="selected-file">
+          <span className="file-mark"><Icon name="file" size={22}/></span>
           <div className="file-info" role="status">
             <strong title={file.name}>{file.name}</strong>
             <span>{formatSize(file.size)} · 已选择</span>
@@ -123,7 +122,7 @@ export default function PatchUpload({ file, onChange, disabled = false }: Props)
         </div>
       )}
 
-      <p className="upload-note">选择文件后，填写 Commit Message 并点击提交。</p>
+      
     </section>
   );
 }
