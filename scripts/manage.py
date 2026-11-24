@@ -219,24 +219,24 @@ def start(local_only):
             job_handle = own_process_tree()
             write_state(token)
             host = "127.0.0.1" if local_only else "0.0.0.0"
-            require_free_port("127.0.0.1", 8000)
-            require_free_port(host, 5173)
+            require_free_port("127.0.0.1", 39472)
+            require_free_port(host, 39471)
             node = prepare(marker)
             stop_requested(marker)
             print("Starting backend...", flush=True)
-            backend = launch([PYTHON, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"], BACKEND)
-            wait_ready("http://127.0.0.1:8000/api/health", [backend], marker, health=True)
+            backend = launch([PYTHON, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "39472"], BACKEND)
+            wait_ready("http://127.0.0.1:39472/api/health", [backend], marker, health=True)
             print("Starting frontend...", flush=True)
-            frontend = launch([node, VITE, "--host", host, "--port", "5173", "--strictPort"], FRONTEND)
-            wait_ready("http://127.0.0.1:5173/", [backend, frontend], marker)
-            wait_ready("http://127.0.0.1:5173/api/health", [backend, frontend], marker, health=True)
-            print("\nPatchCenter is ready: http://localhost:5173/", flush=True)
+            frontend = launch([node, VITE, "--host", host, "--port", "39471", "--strictPort"], FRONTEND)
+            wait_ready("http://127.0.0.1:39471/", [backend, frontend], marker)
+            wait_ready("http://127.0.0.1:39471/api/health", [backend, frontend], marker, health=True)
+            print("\nPatchCenter is ready: http://localhost:39471/", flush=True)
             if not local_only:
                 print("LAN: share Vite's Network address with authorized colleagues.", flush=True)
             print("Run python stop.py or press Ctrl+C to stop both services.", flush=True)
             try:
                 # Use the Windows shell to open the browser outside our job.
-                os.startfile("http://localhost:5173/")
+                os.startfile("http://localhost:39471/")
             except OSError:
                 print("Open the URL in your browser manually.", flush=True)
             while True:
