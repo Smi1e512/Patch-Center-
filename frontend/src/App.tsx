@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Icon from './components/Icon';
 import AdminPanel from './components/AdminPanel';
 import PatchUpload from './components/PatchUpload';
 import CommitMessageInput from './components/CommitMessageInput';
-import { submitPatch } from './api';
-import type { PatchReceipt } from './api';
+import BranchSelector from './components/BranchSelector';
+import { getBranchOptions, submitPatch } from './api';
+import type { BranchOptions, PatchReceipt } from './api';
 
 export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
@@ -16,20 +17,48 @@ export default function App() {
   const [receipt, setReceipt] = useState<PatchReceipt | null>(null);
   const [error, setError] = useState('');
   const [formVersion, setFormVersion] = useState(0);
-  const canSubmit = !!patchFile && !!commitMessage.trim() && !submitting;
+  const [branchOptions, setBranchOptions] = useState<BranchOptions | null>(null);
+  const [branchLoading, setBranchLoading] = useState(true);
+  const [branchError, setBranchError] = useState('');
+  const [branchVersion, setBranchVersion] = useState(0);
+  const [development, setDevelopment] = useState('');
+  const [cherryPick, setCherryPick] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (showAdmin) return;
+    const controller = new AbortController();
+    setBranchLoading(true);
+    setBranchError('');
+    setBranchOptions(null);
+    getBranchOptions(controller.signal).then(options => {
+      if (controller.signal.aborted) return;
+      setBranchOptions(options);
+      setDevelopment(id => options.development.some(item => item.id === id) ? id : '');
+      setCherryPick(ids => ids.filter(id => options.cherryPick.some(item => item.id === id)));
+    }).catch((err: unknown) => {
+      if (!controller.signal.aborted) setBranchError(err instanceof Error ? err.message : '无法加载分支配置。');
+    }).finally(() => {
+      if (!controller.signal.aborted) setBranchLoading(false);
+    });
+    return () => controller.abort();
+  }, [showAdmin, branchVersion]);
+
+  const canSubmit = !!patchFile && !!commitMessage.trim() && !!development && !!branchOptions && !branchLoading && !submitting;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!patchFile || !commitMessage.trim() || inFlight.current) return;
+    if (!patchFile || !canSubmit || inFlight.current) return;
     inFlight.current = true;
     setSubmitting(true);
     setError('');
     setReceipt(null);
     try {
-      const result = await submitPatch(patchFile, commitMessage);
+      const result = await submitPatch(patchFile, commitMessage, development, cherryPick);
       setReceipt(result);
       setPatchFile(null);
       setCommitMessage('');
+      setDevelopment('');
+      setCherryPick([]);
       setFormVersion((version) => version + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : '提交失败，请重试。');
@@ -68,7 +97,7 @@ export default function App() {
             <form className="surface submission-card" onSubmit={handleSubmit}>
               <div className="surface-heading">
                 <div><h2>新建提交</h2><p>请完整填写以下信息。</p></div>
-                <span className="quiet-label">两项必填</span>
+                <span className="quiet-label">三项必填</span>
               </div>
               <fieldset className="submission-fields" disabled={submitting}>
                 <PatchUpload file={patchFile} onChange={(file) => {
@@ -77,6 +106,11 @@ export default function App() {
                 <CommitMessageInput key={formVersion} value={commitMessage} onChange={(value) => {
                   setCommitMessage(value); setReceipt(null); setError('');
                 }} />
+                <BranchSelector options={branchOptions} loading={branchLoading} error={branchError}
+                  development={development} cherryPick={cherryPick}
+                  onDevelopment={id => { setDevelopment(id); setReceipt(null); setError(''); }}
+                  onCherryPick={ids => { setCherryPick(ids); setReceipt(null); setError(''); }}
+                  onRetry={() => setBranchVersion(n => n + 1)} disabled={submitting} />
               </fieldset>
               {error && <p className="submission-error" role="alert">{error}</p>}
               {receipt && (
@@ -100,7 +134,7 @@ export default function App() {
               <section className="surface guide-card">
                 <h2>提交与审核流程</h2>
                 <ol className="workflow">
-                  <li><span className="workflow-number">01</span><div><strong>上传变更</strong><p>选择 Patch 文件并填写 Commit Message。</p></div></li>
+                  <li><span className="workflow-number">01</span><div><strong>上传变更</strong><p>选择 Patch 文件、填写 Commit Message 并选择目标分支。</p></div></li>
                   <li><span className="workflow-number">02</span><div><strong>等待人工审核</strong><p>管理员确认任务内容，通过或驳回。</p></div></li>
                   <li><span className="workflow-number">03</span><div><strong>后续处理</strong><p>仅审核通过的任务可进入后续流程，执行功能尚未接入。</p></div></li>
                 </ol>
@@ -111,6 +145,8 @@ export default function App() {
                   <dt>文件格式</dt><dd>.patch / .diff</dd>
                   <dt>单文件大小</dt><dd>最大 10 MB</dd>
                   <dt>提交说明</dt><dd>最多 4000 字符</dd>
+                  <dt>开发分支</dt><dd>必选 1 项</dd>
+                  <dt>Cherry-pick</dt><dd>可选多项</dd>
                 </dl>
                 <p className="guide-note"><Icon name="info" /> 当前为开发测试环境，请使用非敏感测试文件。</p>
               </section>

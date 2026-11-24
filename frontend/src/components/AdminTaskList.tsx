@@ -173,7 +173,7 @@ export default function AdminTaskList({ token, onUnauthorized }: {
                         checked={task.status === 'pending_review' && selected.includes(task.id)}
                         disabled={reviewing || task.status !== 'pending_review'}
                         onChange={event => toggleTask(task.id, event.target.checked)} /></td>
-                      <td><div className="table-file"><Icon name="file" size={19}/><div><strong title={task.filename}>{task.filename}</strong><small title={task.id}>{task.id.slice(0, 8)}</small></div></div></td>
+                      <td><div className="table-file"><Icon name="file" size={19}/><div><strong title={task.filename}>{task.filename}</strong><small title={task.id}>{task.id.slice(0, 8)} · {task.targets ? task.targets.development.label : "未指定分支"}</small></div></div></td>
                       <td><span className="table-message" title={task.commitMessage}>{task.commitMessage.split(/\r?\n/)[0] || '（多行提交信息）'}</span></td>
                       <td className="numeric">{formatSize(task.size)}</td>
                       <td className="table-time numeric">{new Date(task.createdAt).toLocaleString('zh-CN', { hour12: false })}</td>
@@ -190,6 +190,8 @@ export default function AdminTaskList({ token, onUnauthorized }: {
                           <dt>提交时间</dt><dd>{new Date(task.createdAt).toLocaleString('zh-CN')}{task.timeSource === 'metadata_mtime' ? '（历史文件修改时间）' : ''}</dd>
                           <dt>文件大小</dt><dd>{formatSize(task.size)}</dd>
                           <dt>任务状态</dt><dd>{STATUS_LABEL[task.status]}</dd>
+                          <dt>开发分支</dt><dd>{task.targets?.development.label ?? "历史任务：未指定"}</dd>
+                          <dt>Cherry-pick</dt><dd>{task.targets ? task.targets.cherryPick.map(item => item.label).join("、") || "不执行 Cherry-pick" : "历史任务：未指定"}</dd>
                           {task.reviewedAt && <><dt>审核时间</dt><dd>{new Date(task.reviewedAt).toLocaleString('zh-CN')}</dd></>}
                         </dl></div>
                         <div><h3>Commit Message</h3><pre>{task.commitMessage}</pre>

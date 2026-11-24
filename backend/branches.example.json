@@ -1,0 +1,26 @@
+{
+  "development": [
+    {
+      "id": "dev-a",
+      "label": "开发分支 A",
+      "ref": "demo/develop-a"
+    },
+    {
+      "id": "dev-b",
+      "label": "开发分支 B",
+      "ref": "demo/develop-b"
+    }
+  ],
+  "cherryPick": [
+    {
+      "id": "release-a",
+      "label": "发布分支 A",
+      "ref": "demo/release-a"
+    },
+    {
+      "id": "release-b",
+      "label": "发布分支 B",
+      "ref": "demo/release-b"
+    }
+  ]
+}

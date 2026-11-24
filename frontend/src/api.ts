@@ -5,10 +5,12 @@ export type PatchReceipt = {
   status: 'pending_review';
 };
 
-export async function submitPatch(file: File, commitMessage: string): Promise<PatchReceipt> {
+export async function submitPatch(file: File, commitMessage: string, development: string, cherryPick: string[]): Promise<PatchReceipt> {
   const data = new FormData();
   data.append('patch', file);
   data.append('commit_message', commitMessage);
+  data.append('development_branch_id', development);
+  cherryPick.forEach(id => data.append('cherry_pick_branch_ids', id));
 
   let response: Response;
   try {
@@ -32,4 +34,19 @@ export async function submitPatch(file: File, commitMessage: string): Promise<Pa
     throw new Error('后端返回了无效的提交结果。');
   }
   return result as PatchReceipt;
+}
+
+export type BranchOption = { id: string; label: string };
+export type BranchOptions = { development: BranchOption[]; cherryPick: BranchOption[] };
+
+export async function getBranchOptions(signal?: AbortSignal): Promise<BranchOptions> {
+  const response = await fetch('/api/branches', { signal, cache: 'no-store' });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(typeof data?.detail === 'string' ? data.detail : '无法加载分支配置。');
+  const valid = (items: unknown): items is BranchOption[] => Array.isArray(items) &&
+    items.every(item => typeof item?.id === 'string' && typeof item?.label === 'string');
+  if (!valid(data?.development) || !valid(data?.cherryPick) || !data.development.length) {
+    throw new Error('分支配置无效，请联系管理员。');
+  }
+  return data as BranchOptions;
 }

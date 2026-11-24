@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from admin_auth import require_admin
+from branch_config import ID_PATTERN, MAX_BRANCHES, valid_branch_ref
 from pydantic import BaseModel
 
 UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
@@ -70,8 +71,31 @@ def read_task(folder: Path) -> dict:
             raise ValueError("Invalid review timestamp")
     else:
         reviewed_at = None
+    targets = data.get("branchTargets")
+    public_targets = None
+    if targets is not None:
+        def public_branch(item):
+            if (not isinstance(item, dict)
+                    or not isinstance(item.get("id"), str)
+                    or not ID_PATTERN.fullmatch(item["id"])
+                    or not isinstance(item.get("label"), str)
+                    or not item["label"].strip() or len(item["label"]) > 100
+                    or not valid_branch_ref(item.get("ref"))):
+                raise ValueError("Invalid branch snapshot")
+            return {"id": item["id"], "label": item["label"]}
+
+        development = targets["development"]
+        cherry = targets["cherryPick"]
+        if not isinstance(cherry, list) or len(cherry) > MAX_BRANCHES:
+            raise ValueError("Invalid cherry-pick snapshot")
+        public_targets = {"development": public_branch(development),
+                          "cherryPick": [public_branch(item) for item in cherry]}
+        refs = [development["ref"]] + [item["ref"] for item in cherry]
+        if len(set(refs)) != len(refs):
+            raise ValueError("Duplicate branch snapshot")
     return {
         "id": folder.name,
+        "targets": public_targets,
         "filename": filename,
         "size": size,
         "commitMessage": message,
@@ -138,7 +162,8 @@ def review_task(task_id: str, body: ReviewRequest, response: Response):
         temporary = folder / "review.tmp"
         try:
             original = json.loads((folder / "request.json").read_text(encoding="utf-8"))
-            original.update(task)
+            # Public targets omit private refs. Keep the original snapshot intact.
+            original.update({key: value for key, value in task.items() if key != 'targets'})
             with temporary.open("x", encoding="utf-8") as output:
                 json.dump(original, output, ensure_ascii=False, indent=2)
                 output.write("\n")

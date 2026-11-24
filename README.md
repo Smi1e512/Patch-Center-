@@ -94,7 +94,7 @@ Invoke-RestMethod http://127.0.0.1:39472/api/health
 
 更新代码后，在 backend 目录重新安装依赖并启动后端（命令见第五步），再从 frontend 目录重启 `npm run dev` 或 `npm run dev:lan`。Vite 将同源 /api 请求代理到本机 127.0.0.1:39472，因此无需向同事开放后端端口。
 
-选择一个非敏感测试 Patch 并填写 Commit Message，点击“提交 Patch”。前端使用 FormData 发送 POST /api/patches，字段名为 patch 和 commit_message。后端独立校验格式、大小、非空和提交信息，使用随机 ID 保存原始字节及 UTF-8 JSON 元数据：
+选择一个非敏感测试 Patch 并填写 Commit Message，点击“提交 Patch”。前端使用 FormData 发送 POST /api/patches，字段名为 patch、commit_message、development_branch_id 和可重复的 cherry_pick_branch_ids。后端独立校验格式、大小、非空和提交信息，使用随机 ID 保存原始字节及 UTF-8 JSON 元数据：
 
 ```text
 backend/uploads/<id>/
@@ -142,7 +142,7 @@ python start.py
 
 ## 人工审核关卡
 
-普通访客只上传 Patch 和 Commit Message，不提供审核状态，服务端固定设置 pending_review。历史 received 任务也视为待审核。
+普通访客上传 Patch、Commit Message 和分支选项 ID，不提供审核状态，服务端固定设置 pending_review。历史 received 任务也视为待审核。
 
 管理员通过 POST /api/admin/tasks/{id}/review（JSON decision 为 approved 或 rejected）审核，必须持有有效 Token。仅允许 pending_review 转为 approved 或 rejected，重复审核返回 409。审核状态及 UTC reviewedAt 原子写入原 request.json，单进程内加锁，保留原始提交时间及 Patch 文件，不依赖数据库。重启后审核结果保留。
 
@@ -161,6 +161,26 @@ python start.py
 ## 桌面端界面
 
 顶部统一导航；提交页采用表单与流程说明双栏布局；管理员验证页采用独立双栏布局；后台采用宽屏数据表格、任务统计和行内详情。统计中“全部任务”为服务端总量，其他状态数量仅统计当前页。窄窗口自动适配，表格支持横向滚动。原有认证、上传、审核、分页及批量操作保持不变。无需额外前端依赖。
+
+## 本地分支配置及项目隐私
+
+首次使用分支选择前，在项目根目录执行（目录存在也可安全运行；不要覆盖已有配置）：
+
+```powershell
+New-Item -ItemType Directory -Force backend/data | Out-Null
+if (!(Test-Path backend/data/branches.json)) {
+    Copy-Item backend/branches.example.json backend/data/branches.json
+}
+notepad backend/data/branches.json
+```
+
+模板仅有虚构测试分支。请在本地编辑：development 是开发分支选项，cherryPick 是允许的 Cherry-pick 分支；id 为稳定的公开标识，label 为允许访客看到的显示名称，ref 为真实分支名。不要把真实项目名、仓库地址、路径、账号、Token 放入模板、前端源码或公开 label/id。选项 ID 不应重新指向不同分支；修改配置后请刷新页面。未配置或配置错误时禁止新提交。
+
+开发分支必选一项；Cherry-pick 可选零项或多项。后端独立校验允许列表、重复项及开发分支与 Cherry-pick 目标重复，保存真实分支快照至本地 request.json 的 branchTargets。公开 GET /api/branches 及管理员任务查询仅返回选项 ID 和显示名称，不返回 ref。已有历史任务可以查看和审核，但没有分支快照；未来执行入口必须拒绝缺少快照的任务，并重新检查目标分支是否仍在允许列表中，不能按默认分支执行。现在不执行 Git 或 AI。
+
+隐私约束：真实配置和管理员凭证仅在 backend/data/，原始 Patch 及任务信息仅在 backend/uploads/，均已加入 .gitignore。Vite 文件访问范围限定为前端目录，禁止直接读取后端文件。Git 忽略规则不能保护已经被跟踪或推送的文件；提交前检查 git status、git diff --cached，不要使用 git add -f。不要把公司仓库放在 frontend/ 内。公开仓库只包含通用工具代码及虚构示例，不包含真实业务代码或实际配置。现有开发模式仍使用 HTTP，不能安全传输敏感 Patch 或凭证；正式使用需要公司批准的网络、HTTPS、访问控制、磁盘权限及保留策略。
+
+验收：配置测试分支后刷新提交页，开发分支单选、Cherry-pick 多选；未选择开发分支不能提交；后台显示所选别名，审核不改变真实分支快照；检查浏览器 GET /api/branches 不包含真实 ref，尝试提交不在允许列表中的 ID 应被拒绝。
 
 ## 下一步
 

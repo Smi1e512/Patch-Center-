@@ -62,6 +62,7 @@ export type AdminTask = {
   commitMessage: string;
   status: 'pending_review' | 'approved' | 'rejected';
   reviewedAt: string | null;
+  targets: { development: { id: string; label: string }; cherryPick: { id: string; label: string }[] } | null;
   createdAt: string;
   timeSource: 'recorded' | 'metadata_mtime';
 };

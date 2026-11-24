@@ -8,10 +8,12 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 
 from admin_auth import router as admin_router
 from admin_tasks import UPLOAD_DIR, router as tasks_router
+from branch_config import resolve_targets, router as branches_router
 
 app = FastAPI(title="PatchCenter API")
 app.include_router(admin_router)
 app.include_router(tasks_router)
+app.include_router(branches_router)
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_REQUEST_BYTES = MAX_FILE_BYTES + 128 * 1024
@@ -49,6 +51,8 @@ async def limit_upload(request: Request, call_next):
 def submit_patch(
     patch: UploadFile = File(...),
     commit_message: str = Form(...),
+    development_branch_id: str = Form(...),
+    cherry_pick_branch_ids: list[str] = Form(default=[]),
 ):
     # Never use a client-provided name as a filesystem path.
     filename = (patch.filename or "").replace("\\", "/").rsplit("/", 1)[-1]
@@ -57,6 +61,7 @@ def submit_patch(
     if not commit_message.strip() or len(commit_message.encode("utf-16-le")) // 2 > 4000:
         raise HTTPException(400, "Commit Message 必填，长度不能超过 4000。")
 
+    targets = resolve_targets(development_branch_id, cherry_pick_branch_ids)
     upload_id = uuid4().hex
     folder = UPLOAD_DIR / upload_id
     folder.mkdir(parents=True, exist_ok=False)
@@ -77,6 +82,7 @@ def submit_patch(
             "size": size,
             "commitMessage": commit_message,
             "status": "pending_review",
+            "branchTargets": targets,
             "createdAt": datetime.now(timezone.utc).isoformat(),
         }
         (folder / "request.tmp").write_text(

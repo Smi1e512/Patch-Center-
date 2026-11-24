@@ -18,3 +18,13 @@ backend/uploads/
 
 # Local administrator credentials and tokens
 backend/data/
+
+# Never commit local patches, credentials or local configuration
+*.patch
+*.diff
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.log

@@ -8,7 +8,9 @@ export default defineConfig({
     strictPort: true,
     fs: {
       // Keep local credentials and uploaded patches out of Vite file serving.
-      deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/backend/**', '**/.runtime/**'],
+      strict: true,
+      allow: ['.'],
+      deny: ['.env', '.env.*', '*.{crt,pem,key,pfx,p12,patch,diff}', '**/.git/**', '**/backend/**', '**/.runtime/**'],
     },
     proxy: {
       '/api': {
