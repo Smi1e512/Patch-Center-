@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdminApiError, loginAdmin, logoutAdmin, readToken, saveToken, verifyAdmin } from '../adminApi';
+
+import AdminTaskList from './AdminTaskList';
 
 type Phase = 'checking' | 'login' | 'ready' | 'unavailable';
 
@@ -13,6 +15,13 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
   const [notice, setNotice] = useState('');
   const [retry, setRetry] = useState(0);
   const pending = useRef(false);
+  const onUnauthorized = useCallback(() => {
+    saveToken(null);
+    setToken(null);
+    setNotice('');
+    setError('登录凭证已失效，请重新输入密码。');
+    setPhase('login');
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -111,11 +120,8 @@ export default function AdminPanel({ onBack }: { onBack: () => void }) {
           <p className="upload-note">登录凭证保存在当前浏览器，退出登录后失效。</p>
         </form>
       )}
-      {phase === 'ready' && (
-        <div className="admin-welcome">
-          <strong>已通过管理员验证</strong>
-          <p>任务管理、AI 和 Git 配置将在后续开发。</p>
-        </div>
+      {phase === 'ready' && token && (
+        <AdminTaskList token={token} onUnauthorized={onUnauthorized} />
       )}
       {notice && <p className="upload-note" role="status">{notice}</p>}
       {error && <p className="submission-error" role="alert">{error}</p>}

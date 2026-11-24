@@ -54,3 +54,31 @@ export function saveToken(token: string | null) {
     return false;
   }
 }
+
+export type AdminTask = {
+  id: string;
+  filename: string;
+  size: number;
+  commitMessage: string;
+  status: 'received';
+  createdAt: string;
+  timeSource: 'recorded' | 'metadata_mtime';
+};
+
+export type TaskPage = {
+  items: AdminTask[];
+  total: number;
+  offset: number;
+  limit: number;
+  skipped: number;
+};
+
+export async function listAdminTasks(token: string, offset: number, signal?: AbortSignal): Promise<TaskPage> {
+  const data = await request(`tasks?offset=${offset}&limit=20`, { signal }, token);
+  if (!Array.isArray(data?.items) || !Number.isInteger(data.total) ||
+      !Number.isInteger(data.offset) || !Number.isInteger(data.limit) ||
+      !Number.isInteger(data.skipped)) {
+    throw new Error('后台返回了无效的任务列表。');
+  }
+  return data as TaskPage;
+}

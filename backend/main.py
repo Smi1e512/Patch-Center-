@@ -1,16 +1,18 @@
 import json
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 
 from admin_auth import router as admin_router
+from admin_tasks import UPLOAD_DIR, router as tasks_router
 
 app = FastAPI(title="PatchCenter API")
 app.include_router(admin_router)
+app.include_router(tasks_router)
 
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_REQUEST_BYTES = MAX_FILE_BYTES + 128 * 1024
 
@@ -75,11 +77,13 @@ def submit_patch(
             "size": size,
             "commitMessage": commit_message,
             "status": "received",
+            "createdAt": datetime.now(timezone.utc).isoformat(),
         }
-        (folder / "request.json").write_text(
+        (folder / "request.tmp").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+        (folder / "request.tmp").replace(folder / "request.json")
     except Exception:
         shutil.rmtree(folder, ignore_errors=True)
         raise

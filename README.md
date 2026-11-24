@@ -102,7 +102,7 @@ backend/uploads/<id>/
   request.json
 ```
 
-成功返回 HTTP 201、id、filename、size 和 status=received；页面显示接收结果并清空表单。失败保留输入并显示错误。上传目录已加入 .gitignore；不提供文件读取或执行接口。文件扩展名校验不代表 Patch 内容正确。
+成功返回 HTTP 201、id、filename、size 和 status=received；页面显示接收结果并清空表单。失败保留输入并显示错误。上传目录已加入 .gitignore；管理后台提供任务元数据只读查询，不提供 Patch 内容下载或执行接口。文件扩展名校验不代表 Patch 内容正确。
 
 验收：分别在本机与经授权的同事电脑提交非敏感测试文件，检查本机 uploads 目录和 JSON 中的多行提交信息。停止后端后测试错误提示，再重启。无需修改防火墙的 39472 端口。
 
@@ -110,7 +110,7 @@ backend/uploads/<id>/
 
 ## 管理后台：单密码验证
 
-普通访客无需登录，可以继续提交 Patch。首页右上角“管理后台”需要管理员密码，当前后台只有验证成功页面，不执行 AI 或 Git 操作。
+普通访客无需登录，可以继续提交 Patch。首页右上角“管理后台”需要管理员密码，验证成功后可查看任务列表及详情，不执行 AI 或 Git 操作。
 
 首次配置或修改密码（先停止服务，在项目根目录执行）：
 
@@ -132,6 +132,14 @@ python start.py
 
 后端测试：在 backend 目录使用虚拟环境 Python 执行 `python -m unittest discover -s tests`（请先激活虚拟环境，或将 python 替换为 .venv 中的解释器）。
 
+## 管理后台：任务管理
+
+登录后台后自动加载任务列表，默认最新提交优先，每页 20 条。点击任务展开完整 Commit Message、任务 ID、时间、文件大小及状态，点击“刷新列表”获取最新任务。现阶段只读，所有任务状态为“已接收”，不下载、删除、审批或执行 Patch。
+
+后端 GET /api/admin/tasks?offset=0&limit=20 必须携带管理员 Bearer Token，返回分页任务元数据；响应禁止缓存。数据直接读取 backend/uploads/<id>/request.json，并确认对应 change.patch 存在且大小匹配，无需数据库。新提交增加 UTC createdAt，历史记录使用 request.json 文件修改时间，并在详情标明。未完成上传不显示，损坏记录跳过并提示数量；不修改原始记录。
+
+验收：提交两份非敏感测试 Patch，进入后台查看最新任务在前，展开核对多行 Commit Message，提交第三份后刷新，检查旧任务仍可查看。未认证访问任务接口应返回 401。测试分页、空目录及异常记录，可运行现有 unittest 命令。
+
 ## 下一步
 
-管理后台功能可按需逐步扩展；AI 通信暂缓。
+按需增加后台任务操作；AI 通信暂缓。
