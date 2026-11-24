@@ -2,7 +2,7 @@
 
 ## 第一步：初始化 React 网页
 
-当前仅包含 React + TypeScript + Vite 的静态首页。没有上传组件、后端、Git 或 AI 功能。原 v0.1 保留在 `backup-v0.1` 分支。
+当前包含 React + TypeScript + Vite 首页和 Patch 文件选择组件。没有后端、Git 或 AI 功能。原 v0.1 保留在 `backup-v0.1` 分支。
 
 需要 Node.js 22（建议 22.12+）和 npm。
 
@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-打开终端显示的地址（默认 http://localhost:5173）。看到 PatchCenter 和欢迎文字即完成本阶段验收。
+打开终端显示的地址（默认 http://localhost:5173）。看到 PatchCenter 和文件选择区域即表示页面启动成功。
 
 ## 第二步：局域网访问（仅开发测试）
 
@@ -40,6 +40,14 @@ Test-NetConnection 192.168.1.100 -Port 5173
 
 生产构建：`npm run build`。
 
+## 第三步：Patch 文件选择
+
+点击或拖拽选择一个 .patch 或 .diff 文件（不区分扩展名大小写，最大 10 MB，即 10 × 1024 × 1024 字节）。页面显示文件名、大小，支持移除和替换。无效格式、空文件、超限文件或同时拖入多个文件时显示错误，保留之前有效的选择。
+
+组件位于 `frontend/src/components/PatchUpload.tsx`，由 `App.tsx` 保存 File 对象。此阶段文件仅留在浏览器内存，不读取内容、不发送网络请求，刷新页面后清空。
+
+验收（请使用非敏感测试文件）：点击选择、拖拽选择、移除后重新选择同一个文件；测试 .txt 文件、空文件、超过 10 MB 的文件和同时拖入多个文件；确认错误提示及已有选择保留。仍可使用 `npm run dev:lan` 让同事验证页面。
+
 ## 下一步
 
-在首页增加 Patch 文件选择组件，暂不发送网络请求。
+增加 Commit Message 输入框，暂不接入后端。
