@@ -241,3 +241,67 @@ h1 {
   overflow-wrap: anywhere;
   font-size: 14px;
 }
+
+.page-heading, .admin-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.secondary-button {
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: #3159c8;
+  background: white;
+  border: 1px solid #c6d0e0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.secondary-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.secondary-button:focus-visible, .admin-password:focus-visible {
+  outline: 2px solid #3159c8;
+  outline-offset: 2px;
+}
+
+.admin-heading {
+  margin-bottom: 20px;
+}
+
+.admin-heading h2 {
+  font-size: 21px;
+  margin: 0;
+}
+
+.admin-password {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #aab5c6;
+  border-radius: 8px;
+  font: inherit;
+  color: inherit;
+}
+
+.admin-welcome {
+  padding: 20px;
+  border: 1px solid #e3e8f0;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.admin-welcome p {
+  color: #667085;
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.back-button {
+  margin-top: 20px;
+}

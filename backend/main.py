@@ -5,7 +5,10 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 
+from admin_auth import router as admin_router
+
 app = FastAPI(title="PatchCenter API")
+app.include_router(admin_router)
 
 UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -21,7 +24,8 @@ def health() -> dict[str, str]:
 async def limit_upload(request: Request, call_next):
     # Browser multipart uploads include Content-Length. Bound the request
     # before FastAPI parses multipart; reject unsupported chunked uploads.
-    if request.method == "POST" and request.url.path.rstrip("/") == "/api/patches":
+    path = request.url.path.rstrip("/")
+    if request.method == "POST" and path in {"/api/patches", "/api/admin/login"}:
         from fastapi.responses import JSONResponse
 
         length = request.headers.get("content-length")
@@ -33,7 +37,8 @@ async def limit_upload(request: Request, call_next):
             size = -1
         if size < 0:
             return JSONResponse(status_code=400, content={"detail": "请求长度无效。"})
-        if size > MAX_REQUEST_BYTES:
+        limit = 4096 if path == "/api/admin/login" else MAX_REQUEST_BYTES
+        if size > limit:
             return JSONResponse(status_code=413, content={"detail": "上传请求过大。"})
     return await call_next(request)
 

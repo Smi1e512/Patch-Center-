@@ -15,3 +15,6 @@ backend/uploads/
 
 # Launcher runtime
 .runtime/
+
+# Local administrator credentials and tokens
+backend/data/

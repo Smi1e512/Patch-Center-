@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import AdminPanel from './components/AdminPanel';
 import PatchUpload from './components/PatchUpload';
 import CommitMessageInput from './components/CommitMessageInput';
 import { submitPatch } from './api';
 import type { PatchReceipt } from './api';
 
 export default function App() {
+  const [showAdmin, setShowAdmin] = useState(false);
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,8 +40,12 @@ export default function App() {
 
   return (
     <main className="page">
-      <h1>PatchCenter</h1>
+      <div className="page-heading">
+        <h1>PatchCenter</h1>
+        {!showAdmin && <button type="button" className="secondary-button" disabled={submitting} onClick={() => setShowAdmin(true)}>管理后台</button>}
+      </div>
       <p className="subtitle">Patch 提交工具</p>
+      {showAdmin ? <AdminPanel onBack={() => setShowAdmin(false)} /> : <>
       <form onSubmit={handleSubmit}>
         <fieldset className="submission-fields" disabled={submitting}>
           <PatchUpload file={patchFile} onChange={(file) => {
@@ -62,6 +68,7 @@ export default function App() {
           <span>暂未执行 Git 或 AI 操作。</span>
         </section>
       )}
+      </>}
     </main>
   );
 }
