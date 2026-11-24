@@ -407,3 +407,77 @@ h1 {
 .reject-button { background: #fff; color: #b42318; border: 1px solid #d9a29e; }
 .approve-button:disabled, .reject-button:disabled { opacity: .55; cursor: not-allowed; }
 .approve-button:focus-visible, .reject-button:focus-visible { outline: 2px solid #3159c8; outline-offset: 2px; }
+
+.batch-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px;
+  background: #f5f7fa;
+  border: 1px solid #e3e8f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.select-all-label input, .task-checkbox {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #3159c8;
+  cursor: pointer;
+}
+
+.select-all-label input:disabled, .task-checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.batch-count {
+  color: #667085;
+  font-size: 13px;
+}
+
+.batch-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.batch-actions button {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.task-checkbox {
+  flex: 0 0 17px;
+  margin-top: 17px;
+}
+
+.task-row .task-item {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.task-row.is-selected .task-item {
+  border-color: #3159c8;
+  background: #f7f9ff;
+}
+
+.batch-error { white-space: pre-wrap; }
