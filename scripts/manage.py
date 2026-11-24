@@ -210,7 +210,7 @@ def wait_ready(url, processes, marker, health=False):
 def start(local_only):
     with open_lock() as lock:
         if not acquire_lock(lock):
-            print("PatchCenter is already running. Use stop.bat first.")
+            print("PatchCenter is already running. Use python stop.py first.")
             return 0
         token = uuid4().hex
         marker = RUNTIME / f"{token}.stop"
@@ -233,7 +233,7 @@ def start(local_only):
             print("\nPatchCenter is ready: http://localhost:5173/", flush=True)
             if not local_only:
                 print("LAN: share Vite's Network address with authorized colleagues.", flush=True)
-            print("Run stop.bat or press Ctrl+C to stop both services.", flush=True)
+            print("Run python stop.py or press Ctrl+C to stop both services.", flush=True)
             try:
                 # Use the Windows shell to open the browser outside our job.
                 os.startfile("http://localhost:5173/")
@@ -276,7 +276,7 @@ def stop():
     with open_lock() as lock:
         if acquire_lock(lock):
             unlock(lock)
-            print("PatchCenter is not running through start.bat.")
+            print("PatchCenter is not running through the launcher.")
             return 0
         # The launcher publishes a per-run token; never terminate a PID or
         # delete an upload directory based on a stale file.
